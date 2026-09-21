@@ -49,12 +49,17 @@
   let toastTimer = null;
 
   // 本地存储 Key
-  const STORAGE_CODE_KEY = 'ai_html_runner_saved_code';
+  const STORAGE_CODE_KEY = 'ai_html_runner_saved_code_v2';
   const STORAGE_THEME_KEY = 'ai_html_runner_theme';
 
   /* ================= 1. 初始化与事件监听 ================= */
 
   function init() {
+    // 清理旧版本本地草稿缓存
+    if (localStorage.getItem('ai_html_runner_saved_code')) {
+      localStorage.removeItem('ai_html_runner_saved_code');
+    }
+
     // 恢复历史主题
     const savedTheme = localStorage.getItem(STORAGE_THEME_KEY) || 'dark';
     document.documentElement.setAttribute('data-theme', savedTheme);
@@ -353,70 +358,212 @@
   function loadDemo(type) {
     let demoCode = '';
 
-    if (type === 'vue-alarm') {
+    if (type === 'vue-dashboard' || type === 'vue-alarm') {
       demoCode = `<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <title>监控告警中心 · Vue 原型</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>AI 智算集群实时控制台</title>
   <!-- 引入 Vue 与 Element UI -->
   <link rel="stylesheet" href="https://npm.elemecdn.com/element-ui@2.15.14/lib/theme-chalk/index.css">
   <script src="https://npm.elemecdn.com/vue@2.6.14/dist/vue.min.js"><\/script>
   <script src="https://npm.elemecdn.com/element-ui@2.15.14/lib/index.js"><\/script>
   <style>
-    body { margin: 0; background: #0f172a; color: #f8fafc; font-family: system-ui, sans-serif; padding: 16px; }
-    .card { background: #1e293b; border-radius: 16px; padding: 18px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); border: 1px solid #334155; }
-    .title { font-size: 18px; font-weight: 700; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; }
-    .item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #334155; font-size: 14px; }
-    .label { color: #94a3b8; }
-    .value { font-weight: 600; }
-    .btn-wrap { margin-top: 20px; display: flex; gap: 10px; }
-    .el-button--primary { background: #3b82f6; border-color: #3b82f6; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: #0b0f19;
+      color: #f1f5f9;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      padding: 16px;
+      -webkit-font-smoothing: antialiased;
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #1e293b;
+    }
+    .header-title {
+      font-size: 16px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      background: #10b981;
+      border-radius: 50%;
+      box-shadow: 0 0 8px #10b981;
+    }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .stat-card {
+      background: #161f30;
+      border: 1px solid #27354f;
+      border-radius: 12px;
+      padding: 12px;
+      text-align: center;
+    }
+    .stat-val {
+      font-size: 18px;
+      font-weight: 800;
+      color: #38bdf8;
+      margin-top: 4px;
+    }
+    .stat-lbl {
+      font-size: 11px;
+      color: #94a3b8;
+    }
+    .card {
+      background: #161f30;
+      border: 1px solid #27354f;
+      border-radius: 14px;
+      padding: 16px;
+      margin-bottom: 14px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+    }
+    .card-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #cbd5e1;
+      margin-bottom: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .task-item {
+      background: #0f172a;
+      border: 1px solid #1e293b;
+      border-radius: 10px;
+      padding: 12px;
+      margin-bottom: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .task-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .task-name {
+      font-size: 13px;
+      font-weight: 600;
+      color: #f8fafc;
+    }
+    .task-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      color: #64748b;
+    }
+    .btn-wrap {
+      display: flex;
+      gap: 8px;
+      margin-top: 14px;
+    }
+    .btn-wrap .el-button {
+      flex: 1;
+    }
+    .el-dialog {
+      background: #161f30 !important;
+      border: 1px solid #334155 !important;
+      border-radius: 14px !important;
+    }
+    .el-dialog__title {
+      color: #f1f5f9 !important;
+      font-size: 15px !important;
+      font-weight: 700 !important;
+    }
+    .el-form-item__label {
+      color: #94a3b8 !important;
+    }
+    .el-input__inner {
+      background: #0f172a !important;
+      border-color: #334155 !important;
+      color: #f8fafc !important;
+    }
+    .el-progress-bar__outer {
+      background-color: #1e293b !important;
+    }
   </style>
 </head>
 <body>
   <div id="app">
-    <div class="card">
-      <div class="title">
-        <span>🚨 异常告警实时详情</span>
-        <el-tag :type="currentAlarm.handled ? 'success' : 'danger'" size="medium">
-          {{ currentAlarm.handled ? '已处理' : '待处理' }}
-        </el-tag>
+    <div class="header">
+      <div class="header-title">
+        <span class="status-dot"></span>
+        AI 智算集群调度中心
       </div>
+      <el-tag size="mini" type="success" effect="dark">集群健康</el-tag>
+    </div>
 
-      <div class="item">
-        <span class="label">告警时间</span>
-        <span class="value">{{ currentAlarm.time }}</span>
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-lbl">算力利用率</div>
+        <div class="stat-val">{{ computeLoad }}%</div>
       </div>
-      <div class="item">
-        <span class="label">监控点位</span>
-        <span class="value">{{ currentAlarm.pointName }}</span>
+      <div class="stat-card">
+        <div class="stat-lbl">活跃任务数</div>
+        <div class="stat-val">{{ tasks.length }}</div>
       </div>
-      <div class="item">
-        <span class="label">告警级别</span>
-        <span class="value" style="color: #f87171;">{{ currentAlarm.alarmType }}</span>
-      </div>
-      <div class="item">
-        <span class="label">触发源</span>
-        <span class="value">🤖 {{ currentAlarm.source }}</span>
-      </div>
-
-      <div class="btn-wrap">
-        <el-button size="medium" @click="showDialog = true">查看抓拍</el-button>
-        <el-button type="primary" size="medium" v-if="!currentAlarm.handled" @click="handleAlarm">
-          立即确认处理
-        </el-button>
+      <div class="stat-card">
+        <div class="stat-lbl">GPU 显存占用</div>
+        <div class="stat-val">58.4G</div>
       </div>
     </div>
 
-    <!-- 弹窗组件 -->
-    <el-dialog title="现场红外抓拍" :visible.sync="showDialog" width="90%">
-      <div style="text-align: center; padding: 20px 0; background: #0f172a; border-radius: 8px;">
-        <span style="font-size: 40px;">📷</span>
-        <p style="color: #94a3b8; margin-top: 10px; font-size: 13px;">红外高清截图已自动归档存证</p>
+    <div class="card">
+      <div class="card-title">
+        <span>🚀 实时推理与训练队列</span>
+        <span style="font-size: 12px; color: #64748b;">已接入 3 个节点</span>
       </div>
+
+      <div class="task-item" v-for="t in tasks" :key="t.id">
+        <div class="task-top">
+          <span class="task-name">{{ t.name }}</span>
+          <el-tag size="mini" :type="t.statusType">{{ t.statusText }}</el-tag>
+        </div>
+        <el-progress :percentage="t.progress" :color="t.progressColor" :stroke-width="6" :show-text="false"></el-progress>
+        <div class="task-meta">
+          <span>节点: {{ t.node }}</span>
+          <span>进度: {{ t.progress }}%</span>
+        </div>
+      </div>
+
+      <div class="btn-wrap">
+        <el-button size="medium" icon="el-icon-plus" type="primary" @click="dialogVisible = true">分发新任务</el-button>
+        <el-button size="medium" icon="el-icon-refresh" @click="optimizeCluster">动态调度</el-button>
+      </div>
+    </div>
+
+    <el-dialog title="分发新推理任务" :visible.sync="dialogVisible" width="90%">
+      <el-form label-position="top" size="small">
+        <el-form-item label="任务名称">
+          <el-input v-model="newTaskName" placeholder="例如：Qwen-2.5 代码评测流水线"></el-input>
+        </el-form-item>
+        <el-form-item label="基础模型">
+          <el-select v-model="newTaskModel" style="width: 100%;">
+            <el-option label="DeepSeek-R1-671B-Q4" value="DeepSeek-R1-671B-Q4"></el-option>
+            <el-option label="Qwen-2.5-Coder-32B" value="Qwen-2.5-Coder-32B"></el-option>
+            <el-option label="Llama-3.3-70B-Instruct" value="Llama-3.3-70B-Instruct"></el-option>
+          </el-select>
+        </el-form-item>
+      </el-form>
       <span slot="footer" class="dialog-footer">
-        <el-button @click="showDialog = false" size="small">关 闭</el-button>
+        <el-button size="small" @click="dialogVisible = false">取消</el-button>
+        <el-button size="small" type="primary" @click="handleAddTask">立即派发</el-button>
       </span>
     </el-dialog>
   </div>
@@ -425,19 +572,41 @@
     new Vue({
       el: '#app',
       data: {
-        showDialog: false,
-        currentAlarm: {
-          time: '2026-09-21 10:58:32',
-          pointName: '东区 2 号地库入口红外探头',
-          alarmType: '重点区域入侵警报 (P1)',
-          source: 'AI 视觉分析引擎 v3',
-          handled: false
-        }
+        dialogVisible: false,
+        computeLoad: 76,
+        newTaskName: '',
+        newTaskModel: 'DeepSeek-R1-671B-Q4',
+        tasks: [
+          { id: 1, name: 'DeepSeek-R1 批量复杂推理', node: 'GPU-Cluster-01', statusText: '运行中', statusType: 'success', progress: 82, progressColor: '#10b981' },
+          { id: 2, name: 'Qwen-Coder 代码辅助生成', node: 'GPU-Cluster-02', statusText: '推理中', statusType: 'primary', progress: 48, progressColor: '#38bdf8' },
+          { id: 3, name: '多模态视觉 Embedding 批处理', node: 'GPU-Cluster-03', statusText: '排队中', statusType: 'info', progress: 12, progressColor: '#f59e0b' }
+        ]
       },
       methods: {
-        handleAlarm: function() {
-          this.currentAlarm.handled = true;
-          this.$message({ message: '告警已成功标记为已处理！', type: 'success' });
+        optimizeCluster: function() {
+          this.computeLoad = Math.floor(65 + Math.random() * 20);
+          this.$message({
+            message: '集群拓扑调度完成，算力利用率平衡至 ' + this.computeLoad + '%',
+            type: 'success'
+          });
+        },
+        handleAddTask: function() {
+          if (!this.newTaskName) {
+            this.$message.warning('请输入任务名称');
+            return;
+          }
+          this.tasks.unshift({
+            id: Date.now(),
+            name: this.newTaskName + ' (' + this.newTaskModel.split('-')[0] + ')',
+            node: 'GPU-Auto-Dynamic',
+            statusText: '初始化',
+            statusType: 'warning',
+            progress: 5,
+            progressColor: '#6366f1'
+          });
+          this.newTaskName = '';
+          this.dialogVisible = false;
+          this.$message.success('新任务已成功下发至 GPU 算力池');
         }
       }
     });
@@ -449,75 +618,467 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <title>微信用户表重复账号排查研报</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>混合专家架构 (MoE) 推理吞吐与显存优化研报</title>
   <style>
-    body { background: #0f172a; color: #e2e8f0; font-family: system-ui, sans-serif; padding: 20px 16px; margin: 0; line-height: 1.7; }
-    h1 { font-size: 22px; color: #60a5fa; margin-bottom: 8px; }
-    .badge { display: inline-block; background: rgba(96,165,250,0.15); color: #60a5fa; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; }
-    table { width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 13px; }
-    th, td { border: 1px solid #334155; padding: 10px; text-align: left; }
-    th { background: #1e293b; color: #94a3b8; }
-    pre { background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 12px; overflow-x: auto; color: #38bdf8; font-family: monospace; }
+    * { box-sizing: border-box; }
+    body {
+      background: #0a0e17;
+      color: #e2e8f0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      padding: 20px 16px;
+      margin: 0;
+      line-height: 1.7;
+      -webkit-font-smoothing: antialiased;
+    }
+    .badge {
+      display: inline-block;
+      background: rgba(99, 102, 241, 0.15);
+      border: 1px solid rgba(99, 102, 241, 0.35);
+      color: #818cf8;
+      padding: 3px 10px;
+      border-radius: 9999px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    h1 {
+      font-size: 20px;
+      color: #f8fafc;
+      margin: 6px 0 10px;
+      line-height: 1.35;
+    }
+    .meta-row {
+      font-size: 12px;
+      color: #64748b;
+      margin-bottom: 16px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .summary-box {
+      background: linear-gradient(135deg, rgba(30, 41, 59, 0.7), rgba(15, 23, 42, 0.9));
+      border-left: 3px solid #6366f1;
+      border-radius: 8px;
+      padding: 12px 14px;
+      margin-bottom: 20px;
+      font-size: 13px;
+      color: #cbd5e1;
+    }
+    .section-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: #38bdf8;
+      margin: 20px 0 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .table-wrap {
+      overflow-x: auto;
+      margin: 12px 0 20px;
+      border-radius: 10px;
+      border: 1px solid #1e293b;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+      text-align: left;
+    }
+    th, td {
+      padding: 10px 12px;
+      border-bottom: 1px solid #1e293b;
+      white-space: nowrap;
+    }
+    th {
+      background: #111827;
+      color: #94a3b8;
+      font-weight: 600;
+    }
+    tr:last-child td {
+      border-bottom: none;
+    }
+    .highlight-cell {
+      color: #10b981;
+      font-weight: 700;
+    }
+    .diff-block {
+      background: #0f172a;
+      border: 1px solid #1e293b;
+      border-radius: 8px;
+      padding: 12px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 11px;
+      line-height: 1.6;
+      overflow-x: auto;
+    }
+    .diff-del { color: #f87171; background: rgba(239, 68, 68, 0.1); display: block; border-radius: 2px; }
+    .diff-add { color: #4ade80; background: rgba(34, 197, 94, 0.1); display: block; border-radius: 2px; }
+    .diff-normal { color: #94a3b8; display: block; }
+    .insight-card {
+      background: #131d2e;
+      border: 1px solid #1e293b;
+      border-radius: 10px;
+      padding: 12px;
+      margin-top: 10px;
+      font-size: 13px;
+    }
+    .insight-header {
+      font-weight: 600;
+      color: #f1f5f9;
+      margin-bottom: 4px;
+    }
   </style>
 </head>
 <body>
-  <span class="badge">技术复盘报告</span>
-  <h1>微信用户表 (wechat_user) 重复账号深度排查</h1>
-  <p>在核对用户中心数据时，发现同一 openId 在高并发登录时偶发建号冲突，以下为定位分析：</p>
-  
-  <table>
-    <thead>
-      <tr><th>编号</th><th>问题</th><th>严重度</th><th>影响规模</th></tr>
-    </thead>
-    <tbody>
-      <tr><td>P1</td><td>并发授权重复建号</td><td style="color:#ef4444;font-weight:700;">高</td><td>1,501 条</td></tr>
-      <tr><td>P2</td><td>真实 openId 缺失</td><td style="color:#f59e0b;font-weight:700;">中</td><td>75,552 条</td></tr>
-    </tbody>
-  </table>
+  <span class="badge">技术研报 · 架构性能评测</span>
+  <h1>混合专家架构 (MoE) 高并发推理与显存优化研报</h1>
+  <div class="meta-row">
+    <span>基准集群: 8×H800 NVLink</span>
+    <span>评测框架: vLLM + Triton</span>
+    <span>日期: 2026-09</span>
+  </div>
 
-  <h3>修复 SQL 示例</h3>
-  <pre>ALTER TABLE wechat_user ADD COLUMN active_key VARCHAR(80);</pre>
+  <div class="summary-box">
+    <strong>执行摘要：</strong>针对百亿至千亿级 MoE 架构模型在并发推理场景下的吞吐瓶颈，实测表明：采用动态 Top-2 路由辅助均衡结合 FP8 KV Cache 量化，吞吐可提升 <strong>1.82 倍</strong>，显存峰值降低 <strong>40.6%</strong>。
+  </div>
+
+  <div class="section-title">📊 吞吐与延迟基准对比</div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>模型架构</th>
+          <th>激活参数</th>
+          <th>首 Token 延迟</th>
+          <th>峰值吞吐</th>
+          <th>显存开销</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>MoE-8x7B (FP8 优化)</strong></td>
+          <td>12.8B</td>
+          <td class="highlight-cell">38 ms</td>
+          <td class="highlight-cell">3,940 tok/s</td>
+          <td class="highlight-cell">28.4 GB</td>
+        </tr>
+        <tr>
+          <td>MoE-8x7B (FP16 基线)</td>
+          <td>12.8B</td>
+          <td>72 ms</td>
+          <td>2,160 tok/s</td>
+          <td>47.8 GB</td>
+        </tr>
+        <tr>
+          <td>Dense-70B (稠密对比)</td>
+          <td>70.0B</td>
+          <td>116 ms</td>
+          <td>1,240 tok/s</td>
+          <td>72.5 GB</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section-title">⚡ 专家路由门控配置 Diff</div>
+  <div class="diff-block">
+    <span class="diff-del">- routing_policy = StaticTopK(k=1, capacity_factor=1.0)</span>
+    <span class="diff-add">+ routing_policy = DynamicMoERouter(k=2, aux_loss_weight=0.01)</span>
+    <span class="diff-del">- kv_cache_dtype = torch.float16</span>
+    <span class="diff-add">+ kv_cache_dtype = torch.float8_e4m3fn  # 显存减少 40.6%</span>
+    <span class="diff-normal">  enable_chunked_prefill = True</span>
+  </div>
+
+  <div class="section-title">💡 关键优化建议</div>
+  <div class="insight-card">
+    <div class="insight-header">1. 门控偏置惩罚 (Sinkhorn Routing)</div>
+    <div style="color: #94a3b8; font-size: 12px;">在高并发负载下，避免特定“通识专家”过载导致流水线气泡，有效均衡 GPU 算力利用率。</div>
+  </div>
+  <div class="insight-card">
+    <div class="insight-header">2. 预填充与解码解耦调度 (Chunked Prefill)</div>
+    <div style="color: #94a3b8; font-size: 12px;">长 prompt 输入时避免阻塞正在并发生成的微批次，降低 P99 抖动 65%。</div>
+  </div>
 </body>
 </html>`;
-    } else if (type === 'interactive-counter') {
+    } else if (type === 'canvas-particles' || type === 'interactive-counter') {
       demoCode = `<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <title>触控反馈计数器</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>星空粒子引力触控场</title>
   <style>
-    body { margin: 0; background: #090d16; color: #fff; font-family: system-ui, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; text-align: center; }
-    .count { font-size: 80px; font-weight: 800; color: #818cf8; margin-bottom: 24px; transition: transform 0.1s; }
-    .btn-row { display: flex; gap: 16px; }
-    button { width: 70px; height: 70px; border-radius: 50%; border: none; background: #1e293b; color: #fff; font-size: 28px; cursor: pointer; transition: transform 0.1s, background 0.2s; box-shadow: 0 4px 20px rgba(0,0,0,0.4); }
-    button:active { transform: scale(0.9); background: #4f46e5; }
+    * { margin: 0; padding: 0; box-sizing: border-box; touch-action: none; }
+    body {
+      background: #030712;
+      overflow: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    canvas {
+      display: block;
+      width: 100vw;
+      height: 100vh;
+    }
+    .hud {
+      position: fixed;
+      top: 16px;
+      left: 16px;
+      right: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      pointer-events: none;
+    }
+    .hud-chip {
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(12px);
+      padding: 6px 12px;
+      border-radius: 9999px;
+      color: #94a3b8;
+      font-size: 12px;
+      font-family: monospace;
+    }
+    .hud-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #38bdf8;
+    }
+    .controls {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 10px;
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(16px);
+      padding: 8px 14px;
+      border-radius: 9999px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    }
+    .btn {
+      background: transparent;
+      border: none;
+      color: #cbd5e1;
+      padding: 8px 14px;
+      border-radius: 9999px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn.active {
+      background: linear-gradient(135deg, #6366f1, #3b82f6);
+      color: #fff;
+      box-shadow: 0 2px 12px rgba(99, 102, 241, 0.5);
+    }
+    .btn:active {
+      transform: scale(0.92);
+    }
   </style>
 </head>
 <body>
-  <div id="num" class="count">0</div>
-  <div class="btn-row">
-    <button onclick="change(-1)">-</button>
-    <button onclick="change(1)">+</button>
+  <div class="hud">
+    <div class="hud-chip hud-title">✨ 粒子引力触控场</div>
+    <div class="hud-chip" id="stats">FPS: 60 · 粒子: 120</div>
   </div>
+
+  <canvas id="canvas"></canvas>
+
+  <div class="controls">
+    <button class="btn active" id="attractBtn">🌌 引力吸引</button>
+    <button class="btn" id="repelBtn">💥 能量排斥</button>
+    <button class="btn" id="burstBtn">🎆 烟花喷涌</button>
+  </div>
+
   <script>
-    var n = 0;
-    var el = document.getElementById('num');
-    function change(d) {
-      n += d;
-      el.textContent = n;
-      el.style.transform = 'scale(1.2)';
-      setTimeout(function(){ el.style.transform = 'scale(1)'; }, 100);
-      if (navigator.vibrate) navigator.vibrate(15);
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const statsEl = document.getElementById('stats');
+    const attractBtn = document.getElementById('attractBtn');
+    const repelBtn = document.getElementById('repelBtn');
+    const burstBtn = document.getElementById('burstBtn');
+
+    let width, height;
+    let mode = 'attract';
+    let pointer = { x: null, y: null, active: false };
+    const particles = [];
+    const PARTICLE_COUNT = 90;
+    const CONNECT_DIST = 90;
+
+    function resize() {
+      width = canvas.width = window.innerWidth;
+      height = canvas.height = window.innerHeight;
     }
+    window.addEventListener('resize', resize);
+    resize();
+
+    class Particle {
+      constructor(x, y) {
+        this.x = x || Math.random() * width;
+        this.y = y || Math.random() * height;
+        this.vx = (Math.random() - 0.5) * 2;
+        this.vy = (Math.random() - 0.5) * 2;
+        this.radius = Math.random() * 2 + 1.5;
+        this.hue = Math.random() * 60 + 190;
+      }
+
+      update() {
+        if (pointer.active && pointer.x !== null) {
+          const dx = pointer.x - this.x;
+          const dy = pointer.y - this.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < 180 && dist > 5) {
+            const force = (180 - dist) / 180;
+            const factor = mode === 'attract' ? 0.08 : -0.15;
+            this.vx += (dx / dist) * force * factor * 5;
+            this.vy += (dy / dist) * force * factor * 5;
+          }
+        }
+
+        this.x += this.vx;
+        this.y += this.vy;
+        this.vx *= 0.98;
+        this.vy *= 0.98;
+
+        if (this.x < 0) { this.x = width; }
+        if (this.x > width) { this.x = 0; }
+        if (this.y < 0) { this.y = height; }
+        if (this.y > height) { this.y = 0; }
+      }
+
+      draw() {
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        ctx.fillStyle = 'hsl(' + this.hue + ', 90%, 65%)';
+        ctx.fill();
+      }
+    }
+
+    for (let i = 0; i < PARTICLE_COUNT; i++) {
+      particles.push(new Particle());
+    }
+
+    function burst(cx, cy) {
+      for (let i = 0; i < 25; i++) {
+        const p = new Particle(cx, cy);
+        const angle = Math.random() * Math.PI * 2;
+        const speed = Math.random() * 7 + 2;
+        p.vx = Math.cos(angle) * speed;
+        p.vy = Math.sin(angle) * speed;
+        p.hue = Math.random() * 360;
+        particles.push(p);
+      }
+      if (particles.length > 200) {
+        particles.splice(0, particles.length - 150);
+      }
+      if (navigator.vibrate) navigator.vibrate(25);
+    }
+
+    function handlePointerMove(e) {
+      const touch = e.touches ? e.touches[0] : e;
+      pointer.x = touch.clientX;
+      pointer.y = touch.clientY;
+      pointer.active = true;
+    }
+
+    function handlePointerEnd() {
+      pointer.active = false;
+      pointer.x = null;
+      pointer.y = null;
+    }
+
+    window.addEventListener('touchstart', (e) => {
+      handlePointerMove(e);
+      burst(e.touches[0].clientX, e.touches[0].clientY);
+    });
+    window.addEventListener('touchmove', handlePointerMove, { passive: false });
+    window.addEventListener('touchend', handlePointerEnd);
+    window.addEventListener('mousedown', (e) => {
+      handlePointerMove(e);
+      burst(e.clientX, e.clientY);
+    });
+    window.addEventListener('mousemove', (e) => {
+      if (e.buttons > 0) handlePointerMove(e);
+    });
+    window.addEventListener('mouseup', handlePointerEnd);
+
+    attractBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      mode = 'attract';
+      attractBtn.classList.add('active');
+      repelBtn.classList.remove('active');
+    });
+
+    repelBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      mode = 'repel';
+      repelBtn.classList.add('active');
+      attractBtn.classList.remove('active');
+    });
+
+    burstBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      burst(width / 2, height / 2);
+    });
+
+    let lastTime = performance.now();
+    let frameCount = 0;
+    let fps = 60;
+
+    function loop(time) {
+      frameCount++;
+      if (time - lastTime >= 1000) {
+        fps = frameCount;
+        frameCount = 0;
+        lastTime = time;
+        statsEl.textContent = 'FPS: ' + fps + ' · 粒子: ' + particles.length;
+      }
+
+      ctx.fillStyle = 'rgba(3, 7, 18, 0.25)';
+      ctx.fillRect(0, 0, width, height);
+
+      for (let i = 0; i < particles.length; i++) {
+        for (let j = i + 1; j < particles.length; j++) {
+          const dx = particles[i].x - particles[j].x;
+          const dy = particles[i].y - particles[j].y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < CONNECT_DIST) {
+            ctx.beginPath();
+            ctx.moveTo(particles[i].x, particles[i].y);
+            ctx.lineTo(particles[j].x, particles[j].y);
+            ctx.strokeStyle = 'rgba(99, 102, 241, ' + (1 - dist / CONNECT_DIST) * 0.25 + ')';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+          }
+        }
+      }
+
+      particles.forEach(p => {
+        p.update();
+        p.draw();
+      });
+
+      requestAnimationFrame(loop);
+    }
+    requestAnimationFrame(loop);
   <\/script>
 </body>
 </html>`;
     }
 
-    codeTextarea.value = demoCode;
-    updateCharCount();
-    localStorage.setItem(STORAGE_CODE_KEY, demoCode);
-    showToast('已载入示例，点击「立即运行」即可体验');
+    if (demoCode) {
+      codeTextarea.value = demoCode;
+      updateCharCount();
+      localStorage.setItem(STORAGE_CODE_KEY, demoCode);
+      showToast('已载入示例，点击「立即运行」即可体验');
+    }
   }
 
   /* ================= 7. 轻提示 Toast ================= */
@@ -531,34 +1092,9 @@
     }, duration);
   }
 
-  /* ================= 8. PWA / 添加到主屏幕提示 ================= */
-  function initPwaGuide() {
-    const pwaGuide = document.getElementById('pwaGuide');
-    const closePwaGuideBtn = document.getElementById('closePwaGuideBtn');
-    if (!pwaGuide) return;
-
-    // 如果已经是独立应用模式运行 (standalone)，无需提示
-    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
-    const hasDismissed = sessionStorage.getItem('pwa_guide_dismissed');
-
-    if (!isStandalone && !hasDismissed) {
-      setTimeout(() => {
-        pwaGuide.style.display = 'block';
-      }, 2500);
-    }
-
-    if (closePwaGuideBtn) {
-      closePwaGuideBtn.addEventListener('click', () => {
-        pwaGuide.style.display = 'none';
-        sessionStorage.setItem('pwa_guide_dismissed', '1');
-      });
-    }
-  }
-
   // 启动
   function start() {
     init();
-    initPwaGuide();
   }
 
   start();
