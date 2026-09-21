@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#0d1117">
+  <title>AI HTML Runner · 移动端网页沙箱运行器</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- 页面主容器 -->
+  <div id="app" class="app-container">
+
+    <!-- ================= 模式 1：代码编辑 / 粘贴界面 ================= -->
+    <main id="editorView" class="view editor-view active">
+      <!-- 移动端沉浸顶栏 -->
+      <header class="app-header">
+        <div class="brand">
+          <div class="brand-badge">
+            <span class="pulse-dot"></span>
+            <span>AI RUNNER</span>
+          </div>
+          <h1 class="brand-title">HTML 移动沙箱</h1>
+        </div>
+        <div class="header-actions">
+          <button id="themeToggleBtn" class="icon-btn" aria-label="切换主题" title="切换明暗主题">
+            <span class="theme-icon">🌙</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- 快捷动作工具栏 (移动端大圆角按钮) -->
+      <section class="toolbar">
+        <button id="pasteRunBtn" class="btn btn-primary glow-btn" type="button">
+          <svg class="btn-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+            <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+          </svg>
+          <span>粘贴并运行</span>
+        </button>
+
+        <div class="action-grid">
+          <button id="loadFileBtn" class="btn btn-secondary" type="button">
+            <svg class="btn-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
+              <polyline points="13 2 13 9 20 9"></polyline>
+            </svg>
+            <span>打开文件</span>
+          </button>
+          <input type="file" id="fileInput" accept=".html,.htm,.txt,.vue" style="display: none;">
+
+          <button id="demoBtn" class="btn btn-secondary" type="button">
+            <svg class="btn-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="5 3 19 12 5 21 5 3"></polygon>
+            </svg>
+            <span>示例</span>
+          </button>
+
+          <button id="clearBtn" class="btn btn-secondary btn-danger-soft" type="button">
+            <svg class="btn-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="3 6 5 6 21 6"></polyline>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+            </svg>
+            <span>清空</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- 代码输入卡片 -->
+      <section class="editor-section">
+        <div class="editor-header">
+          <div class="editor-title-wrap">
+            <span class="editor-tag">HTML / JS / VUE</span>
+            <span id="charCount" class="char-count">0 字符</span>
+          </div>
+          <button id="formatBtn" class="text-link-btn" type="button">整理格式</button>
+        </div>
+
+        <div class="textarea-wrapper">
+          <textarea
+            id="codeTextarea"
+            class="code-textarea"
+            placeholder="在这里粘贴 AI 生成的 HTML 完整代码...&#10;支持 Vue 2/3、React、Element UI、ECharts、Tailwind、Canvas 等完整动态逻辑！"
+            spellcheck="false"
+            autocomplete="off"
+            autocorrect="off"
+            autocapitalize="off"
+          ></textarea>
+        </div>
+      </section>
+
+      <!-- AI 移动端专属运行配置 (开关折叠) -->
+      <section class="settings-section">
+        <div class="settings-title">移动端增强选项</div>
+        <div class="setting-item">
+          <div class="setting-info">
+            <div class="setting-name">自动补全 Viewport</div>
+            <div class="setting-desc">缺失视口标签时自动注入，杜绝缩小为 980px 微缩字</div>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="optViewport" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="setting-item">
+          <div class="setting-info">
+            <div class="setting-name">国内 CDN 镜像加速</div>
+            <div class="setting-desc">将 unpkg / cdnjs 自动重写为 npmmirror，防白屏卡死</div>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="optCdnMirror" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="setting-item">
+          <div class="setting-info">
+            <div class="setting-name">手机原型脱壳自适应</div>
+            <div class="setting-desc">移除桌面端套壳外框（.stage/.phone-frame），让界面铺满真机</div>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="optUnwrapFrame" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+      </section>
+
+      <!-- 底部常驻悬浮运行按钮 -->
+      <footer class="footer-bar">
+        <button id="runBtn" class="btn btn-accent btn-large" type="button">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+            <polygon points="5 3 19 12 5 21 5 3"></polygon>
+          </svg>
+          <span>立即运行预览</span>
+        </button>
+      </footer>
+    </main>
+
+    <!-- ================= 模式 2：全屏沙箱预览界面 ================= -->
+    <div id="previewView" class="view preview-view">
+      <!-- 预览核心 iframe (Blob URL 安全沙箱) -->
+      <iframe id="previewIframe" class="preview-iframe" sandbox="allow-scripts allow-forms allow-same-origin allow-modals allow-popups" title="AI Preview Sandbox"></iframe>
+
+      <!-- 移动端悬浮胶囊控制栏 (Floating Action Capsule) -->
+      <aside id="fabMenu" class="fab-menu">
+        <button id="fabBackBtn" class="fab-btn" title="返回编辑">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="19" y1="12" x2="5" y2="12"></line>
+            <polyline points="12 19 5 12 12 5"></polyline>
+          </svg>
+          <span>编辑</span>
+        </button>
+
+        <div class="fab-divider"></div>
+
+        <button id="fabRefreshBtn" class="fab-btn" title="重新运行">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="23 4 23 10 17 10"></polyline>
+            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+          </svg>
+        </button>
+
+        <button id="fabConsoleBtn" class="fab-btn fab-console-btn" title="控制台报错监视">
+          <span class="console-label">LOG</span>
+          <span id="consoleBadge" class="console-badge">0</span>
+        </button>
+      </aside>
+
+      <!-- 控制台抽屉面板 -->
+      <div id="consoleDrawer" class="console-drawer">
+        <div class="console-drawer-header">
+          <div class="console-drawer-title">
+            <span>运行日志 & 报错</span>
+            <span id="drawerLogCount" class="badge-mini">0</span>
+          </div>
+          <div class="console-drawer-actions">
+            <button id="clearLogsBtn" class="mini-btn" type="button">清空</button>
+            <button id="closeDrawerBtn" class="mini-btn" type="button">关闭</button>
+          </div>
+        </div>
+        <div id="consoleLogs" class="console-logs">
+          <div class="log-empty">暂无报错或日志信息，运行顺畅 🎉</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 简易轻提示 (Toast) -->
+    <div id="toast" class="toast"></div>
+
+    <!-- 示例模态选择弹窗 -->
+    <div id="demoModal" class="modal-overlay">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3>选择内置 AI 示例</h3>
+          <button id="closeModalBtn" class="close-btn">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="demo-card" data-demo="vue-alarm">
+            <div class="demo-icon">🚨</div>
+            <div class="demo-meta">
+              <div class="demo-title">Vue + Element UI 监控告警</div>
+              <div class="demo-desc">完整 Vue 2 响应式应用、多状态弹窗、数据双向绑定</div>
+            </div>
+          </div>
+
+          <div class="demo-card" data-demo="tech-report">
+            <div class="demo-icon">📊</div>
+            <div class="demo-meta">
+              <div class="demo-title">微信用户表重复账号研报</div>
+              <div class="demo-desc">包含复杂暗黑 CSS 变量、数据表格、代码 Diff 块</div>
+            </div>
+          </div>
+
+          <div class="demo-card" data-demo="interactive-counter">
+            <div class="demo-icon">🧮</div>
+            <div class="demo-meta">
+              <div class="demo-title">轻量触控计算器</div>
+              <div class="demo-desc">响应式触摸、Canvas 动效与弹性触控反馈</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
