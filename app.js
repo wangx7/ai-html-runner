@@ -571,6 +571,35 @@
     }, duration);
   }
 
+  /* ================= 8. PWA / 添加到主屏幕提示 ================= */
+  function initPwaGuide() {
+    const pwaGuide = document.getElementById('pwaGuide');
+    const closePwaGuideBtn = document.getElementById('closePwaGuideBtn');
+    if (!pwaGuide) return;
+
+    // 如果已经是独立应用模式运行 (standalone)，无需提示
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+    const hasDismissed = sessionStorage.getItem('pwa_guide_dismissed');
+
+    if (!isStandalone && !hasDismissed) {
+      setTimeout(() => {
+        pwaGuide.style.display = 'block';
+      }, 2500);
+    }
+
+    if (closePwaGuideBtn) {
+      closePwaGuideBtn.addEventListener('click', () => {
+        pwaGuide.style.display = 'none';
+        sessionStorage.setItem('pwa_guide_dismissed', '1');
+      });
+    }
+  }
+
   // 启动
-  init();
+  function start() {
+    init();
+    initPwaGuide();
+  }
+
+  start();
 })();
