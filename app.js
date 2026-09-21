@@ -24,7 +24,6 @@
   // 配置开关
   const optViewport = document.getElementById('optViewport');
   const optCdnMirror = document.getElementById('optCdnMirror');
-  const optUnwrapFrame = document.getElementById('optUnwrapFrame');
 
   // 悬浮胶囊控制器 (FAB)
   const fabBackBtn = document.getElementById('fabBackBtn');
@@ -231,46 +230,7 @@
       html = html.replace(/https?:\/\/cdn\.jsdelivr\.net\/npm\//gi, 'https://npm.elemecdn.com/');
     }
 
-    // 3. 手机原型脱壳自适应 (解决桌面预览外框 .stage / .phone-frame 导致真机显示过小)
-    if (optUnwrapFrame.checked) {
-      const unwrapCss = `
-<style id="__runner_unwrap_style__">
-  /* 自动剥离电脑端原型模拟外壳，让手机界面全屏贴合真机屏幕 */
-  body, .stage {
-    display: block !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    width: 100vw !important;
-    min-height: 100vh !important;
-    max-width: 100vw !important;
-    background: transparent !important;
-  }
-  .phone-frame {
-    width: 100vw !important;
-    height: 100vh !important;
-    border-radius: 0 !important;
-    padding: 0 !important;
-    box-shadow: none !important;
-    margin: 0 !important;
-  }
-  .phone-screen {
-    width: 100vw !important;
-    height: 100vh !important;
-    border-radius: 0 !important;
-  }
-  .side-note {
-    display: none !important;
-  }
-</style>
-`;
-      if (/<\/head>/i.test(html)) {
-        html = html.replace(/<\/head>/i, `${unwrapCss}\n</head>`);
-      } else {
-        html = `${unwrapCss}\n${html}`;
-      }
-    }
-
-    // 4. 注入控制台错误拦截器 (把子 iframe 的报错传给外部宿主便于排查)
+    // 3. 注入控制台错误拦截器 (把子 iframe 的报错传给外部宿主便于排查)
     const consoleInterceptorScript = `
 <script id="__runner_console_bridge__">
 (function(){
